@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: smollm2-135m-indonesian-Q8_0
-          path: output/smollm2-gguf/*.Q8_0.gguf
+          path: output/smollm2-gguf/*Q8_0.gguf
           if-no-files-found: error
           retention-days: 30
       - name: Publish GitHub Release
@@ -64,7 +64,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="smollm2-indonesian-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" output/smollm2-gguf/*.Q8_0.gguf \
+          gh release create "$TAG" output/smollm2-gguf/*Q8_0.gguf \
             --repo "$GITHUB_REPOSITORY" \
             --title "SmolLM2 135M Indonesian Q8_0 - ${TAG}" \
             --notes "Experimental CPU LoRA fine-tune and GGUF Q8_0 export. Small initial dataset; output quality and file size are not guaranteed."
