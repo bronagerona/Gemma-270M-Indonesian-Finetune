@@ -1,0 +1,56 @@
+name: Train Indonesian SmolLM2 GGUF
+
+on:
+  workflow_dispatch:
+    inputs:
+      epochs:
+        description: "Jumlah epoch fine-tuning"
+        required: true
+        default: "3"
+        type: choice
+        options: ["1", "2", "3"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: smollm2-indonesian-training
+  cancel-in-progress: false
+
+jobs:
+  train-and-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      BASE_MODEL: HuggingFaceTB/SmolLM2-135M-Instruct
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      TRAIN_EPOCHS: ${{ inputs.epochs }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake git
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Fine-tune SmolLM2 LoRA adapter
+        run: python scripts/train_smollm2.py
+      - name: Export GGUF Q8_0
+        run: bash scripts/export_smollm2_gguf.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smollm2-135m-indonesian-Q8_0
+          path: output/smollm2-gguf/*.Q8_0.gguf
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="smollm2-indonesian-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" output/smollm2-gguf/*.Q8_0.gguf --repo "$GITHUB_REPOSITORY" --title "SmolLM2 135M Indonesian Q8_0 - ${TAG}" --notes "Experimental fine-tune. Quality and size are not guaranteed."
