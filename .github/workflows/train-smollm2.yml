@@ -1,6 +1,9 @@
 name: Train Indonesian SmolLM2 GGUF
 
 on:
+  push:
+    branches:
+      - smollm2-indonesian-experiment
   workflow_dispatch:
     inputs:
       epochs:
@@ -28,33 +31,27 @@ jobs:
       BASE_MODEL: HuggingFaceTB/SmolLM2-135M-Instruct
       HF_HUB_DISABLE_TELEMETRY: "1"
       TOKENIZERS_PARALLELISM: "false"
-      TRAIN_EPOCHS: ${{ inputs.epochs }}
+      TRAIN_EPOCHS: ${{ inputs.epochs || '3' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Install system packages
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake git
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install CPU PyTorch and dependencies
         run: |
           python -m pip install --upgrade pip
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
-
       - name: Fine-tune SmolLM2 LoRA adapter on CPU
         run: python scripts/train_smollm2.py
-
       - name: Merge adapter and export GGUF Q8_0
         run: bash scripts/export_smollm2_gguf.sh
-
       - name: Upload GGUF as workflow artifact
         uses: actions/upload-artifact@v4
         with:
@@ -62,7 +59,6 @@ jobs:
           path: output/smollm2-gguf/*.Q8_0.gguf
           if-no-files-found: error
           retention-days: 30
-
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
