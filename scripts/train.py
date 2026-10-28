@@ -2,6 +2,8 @@ import json
 import os
 from pathlib import Path
 
+import torch
+
 from datasets import Dataset
 from peft import LoraConfig, get_peft_model
 from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForLanguageModeling, Trainer, TrainingArguments
@@ -31,7 +33,7 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, token=token)
     model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL, token=token, torch_dtype="auto", low_cpu_mem_usage=True
+        BASE_MODEL, token=token, torch_dtype=torch.float32, low_cpu_mem_usage=True
     )
     model.config.use_cache = False
 
