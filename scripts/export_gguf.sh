@@ -9,12 +9,13 @@ mkdir -p "$MERGED_DIR" "$GGUF_DIR"
 
 python - <<'PY'
 import os
+import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 base = os.environ.get("BASE_MODEL", "google/gemma-3-270m-it")
 token = os.environ["HF_TOKEN"]
-model = AutoModelForCausalLM.from_pretrained(base, token=token, torch_dtype="auto", low_cpu_mem_usage=True)
+model = AutoModelForCausalLM.from_pretrained(base, token=token, torch_dtype=torch.float32, low_cpu_mem_usage=True)
 model = PeftModel.from_pretrained(model, "output/adapter")
 model.merge_and_unload().save_pretrained("output/merged", safe_serialization=True, max_shard_size="1GB")
 AutoTokenizer.from_pretrained(base, token=token).save_pretrained("output/merged")
